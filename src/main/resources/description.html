@@ -1,0 +1,33 @@
+<p>
+    Seamless <a href="https://github.com/getsops/sops">SOPS</a> (Secrets OPerationS) integration
+    for JetBrains IDEs. Edit encrypted secrets directly in your IDE without leaving your workflow.
+</p>
+
+<h3>Features</h3>
+<ul>
+    <li><b>Encrypt &amp; Decrypt</b> &mdash; One-click encryption and decryption from the editor, project view, or Tools menu</li>
+    <li><b>Decrypted Preview</b> &mdash; View decrypted content in a read-only preview without modifying the original file</li>
+    <li><b>Edit-in-Place</b> &mdash; Edit decrypted content in a temporary file with automatic re-encryption on save</li>
+    <li><b>Key Management</b> &mdash; Rotate data keys and update encryption keys from <code>.sops.yaml</code></li>
+    <li><b>Auto-Detection</b> &mdash; Automatically detects SOPS-encrypted files and shows encryption status</li>
+    <li><b>Visual Indicators</b> &mdash; Custom file icons and status bar widget show encryption state at a glance</li>
+    <li><b>Editor Notifications</b> &mdash; Smart banners with quick actions when opening encrypted files</li>
+    <li><b>Configurable Behavior</b> &mdash; Customize open/save behaviors, auto-close tabs, confirmations, and more</li>
+</ul>
+
+<h3>Supported Formats</h3>
+<p>Works with all SOPS-supported file types: YAML, JSON, ENV, INI, and binary files.</p>
+
+<h3>Requirements</h3>
+<ul>
+    <li>SOPS CLI installed and available in PATH (or configured in settings)</li>
+    <li>Encryption keys configured (AGE, GPG, AWS KMS, GCP KMS, Azure Key Vault, or HashiCorp Vault)</li>
+</ul>
+
+<h3>Getting Started</h3>
+<ol>
+    <li>Install the SOPS CLI: <code>brew install sops</code> (macOS) or see <a href="https://github.com/getsops/sops#installation">installation docs</a></li>
+    <li>Configure your encryption keys</li>
+    <li>Create a <code>.sops.yaml</code> in your project root to define encryption rules</li>
+    <li>Right-click any file and select <b>SOPS &gt; Encrypt File</b> to get started</li>
+</ol>
