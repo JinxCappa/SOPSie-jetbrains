@@ -1,0 +1,23 @@
+src/main/kotlin/com/sopsie/execution/SopsRunner.kt
+  06888d33eeefe609 97-99,102,104-110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "46915601e016fb5944f1089e0462e0f9cbfca87f",
+  "prompts": {
+    "06888d33eeefe609": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "36734fdb-ad08-4b5d-961c-55388f30582e",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "JinxCappa",
+      "messages": [],
+      "total_additions": 11,
+      "total_deletions": 30,
+      "accepted_lines": 11,
+      "overriden_lines": 0
+    }
+  }
+}
