@@ -94,39 +94,20 @@ class SopsRunner {
     }
 
     /**
-     * Encrypt content from stdin with filename override for rule matching.
-     * Used for encrypting in-memory content without writing to disk first.
-     *
-     * Note: Uses a temp file approach because SOPS stdin handling is unreliable
-     * across platforms (Windows doesn't support `-` or `/dev/stdin`).
+     * Encrypt content via stdin with --filename-override for rule matching.
+     * Pipes plaintext to SOPS stdin — no temp file needed.
+     * SOPS uses the override path for creation_rules matching and format detection.
      */
     fun encryptContent(content: String, filePath: String): String {
-        val ext = File(filePath).extension
-        val dir = File(filePath).parentFile
-        val inputType = getInputType(ext)
-        LOG.debug("SopsRunner: Encrypting content for $filePath (type=$inputType)")
+        LOG.debug("SopsRunner: Encrypting content for $filePath")
 
-        // Create a temp file in the same directory so .sops.yaml rules match
-        // Use same extension so SOPS auto-detects the format
-        val tempFileName = ".sopsie-temp-${System.currentTimeMillis()}-${(Math.random() * 100000).toLong()}.$ext"
-        val tempFile = File(dir, tempFileName)
-
-        try {
-            // Write content to temp file
-            tempFile.writeText(content, Charsets.UTF_8)
-
-            // Encrypt the temp file
-            return runSops(listOf("--encrypt", tempFile.absolutePath), tempFile.absolutePath)
-        } finally {
-            // Always clean up temp file
-            try {
-                if (tempFile.exists()) {
-                    tempFile.delete()
-                }
-            } catch (e: Exception) {
-                LOG.debug("Failed to clean up temp file: ${e.message}")
-            }
-        }
+        return runCommand(
+            settings.sopsPath,
+            listOf("--encrypt", "--filename-override", filePath),
+            getWorkingDirectory(filePath),
+            content,
+            settings.timeout
+        )
     }
 
     /**
