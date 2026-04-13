@@ -1,0 +1,27 @@
+.github/workflows/release.yaml
+  01a93087705bfcee 1-67
+justfile
+  01a93087705bfcee 26-42
+build.gradle.kts
+  01a93087705bfcee 65-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "942ceb1442151f9f374d52561db578c2f850ec15",
+  "prompts": {
+    "01a93087705bfcee": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "47aa9273-8532-4f96-866b-318ffb86a926",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "JinxCappa",
+      "messages": [],
+      "total_additions": 87,
+      "total_deletions": 0,
+      "accepted_lines": 87,
+      "overriden_lines": 0
+    }
+  }
+}
