@@ -41,9 +41,16 @@ class SopsSaveListener(private val project: Project) : FileDocumentManagerListen
             return
         }
 
-        // Delegate to AutoBehaviorHandler for regular files
-        // This handles files that were decrypted in-place (AUTO_DECRYPT mode)
-        autoHandler.handleDocumentWillSave(document)
+        // Delegate to AutoBehaviorHandler for regular files. The handler
+        // returns false when the user cancelled the prompt; in that case
+        // we revert the document to its on-disk bytes so the save becomes
+        // a no-op at the file level. FileDocumentManagerListener cannot
+        // veto the save, so revert-to-disk is the only way to honour
+        // Cancel without letting plaintext reach disk.
+        val proceed = autoHandler.handleDocumentWillSave(document)
+        if (!proceed) {
+            autoHandler.revertDocumentToDisk(document, file)
+        }
     }
 
 }
