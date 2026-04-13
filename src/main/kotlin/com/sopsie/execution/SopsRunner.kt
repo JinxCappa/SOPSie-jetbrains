@@ -213,7 +213,7 @@ class SopsRunner {
         throw SopsException(parseError(output.stderr, output.exitCode))
     }
 
-    private fun parseError(stderr: String, code: Int): SopsError {
+    internal fun parseError(stderr: String, code: Int): SopsError {
         val lowerStderr = stderr.lowercase()
 
         if (lowerStderr.contains("could not decrypt") ||
