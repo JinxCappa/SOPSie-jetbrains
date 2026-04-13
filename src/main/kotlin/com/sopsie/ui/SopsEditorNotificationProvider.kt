@@ -1,8 +1,8 @@
 package com.sopsie.ui
 
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.actionSystem.ex.ActionUtil
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.project.DumbAware
@@ -106,13 +106,9 @@ class SopsEditorNotificationProvider : EditorNotificationProvider, DumbAware {
             .add(CommonDataKeys.VIRTUAL_FILE, file)
             .build()
 
-        val event = AnActionEvent.createFromAnAction(
-            action,
-            null,
-            "EditorNotification",
-            dataContext
-        )
-
-        action.actionPerformed(event)
+        // Dispatch through the action system so before/after listeners,
+        // promoters, and update checks run. Calling actionPerformed
+        // directly is override-only and bypasses that plumbing.
+        ActionUtil.invokeAction(action, dataContext, "EditorNotification", null, null)
     }
 }

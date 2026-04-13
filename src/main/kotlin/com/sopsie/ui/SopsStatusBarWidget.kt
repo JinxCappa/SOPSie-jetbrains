@@ -1,7 +1,9 @@
 package com.sopsie.ui
 
 import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataContext
+import com.intellij.openapi.actionSystem.ex.ActionUtil
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -75,17 +77,14 @@ class SopsStatusBarWidget(project: Project) : EditorBasedWidget(project), Status
             val file = getCurrentFile() ?: return@Consumer
 
             val dataContext: DataContext = SimpleDataContext.builder()
-                .add(com.intellij.openapi.actionSystem.CommonDataKeys.PROJECT, project)
-                .add(com.intellij.openapi.actionSystem.CommonDataKeys.VIRTUAL_FILE, file)
+                .add(CommonDataKeys.PROJECT, project)
+                .add(CommonDataKeys.VIRTUAL_FILE, file)
                 .build()
 
-            val event = com.intellij.openapi.actionSystem.AnActionEvent.createFromAnAction(
-                action,
-                null,
-                "StatusBar",
-                dataContext
-            )
-            action.actionPerformed(event)
+            // Dispatch through the action system so before/after listeners,
+            // promoters, and update checks run. Calling actionPerformed
+            // directly is override-only and bypasses that plumbing.
+            ActionUtil.invokeAction(action, dataContext, "StatusBar", null, null)
         }
     }
 
