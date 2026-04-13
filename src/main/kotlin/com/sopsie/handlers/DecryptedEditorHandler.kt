@@ -1,8 +1,13 @@
 package com.sopsie.handlers
 
-import com.intellij.ide.actions.OpenInRightSplitAction
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionUiKind
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.actionSystem.ex.ActionUtil
+import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
@@ -231,11 +236,14 @@ class DecryptedEditorHandler(private val project: Project) : Disposable {
             // First ensure the source file is open and focused
             fileEditorManager.openFile(sourceFile, true)
 
-            // Use the OpenInRightSplitAction API to open the file in a right split
-            val editorWindow = OpenInRightSplitAction.openInRightSplit(project, fileToOpen, null, true)
-
-            if (editorWindow == null) {
-                // Fallback: just open normally if split failed
+            // Invoke the bundled "OpenInRightSplit" action via the action
+            // system. Calling OpenInRightSplitAction.openInRightSplit
+            // directly reaches into platform-internal API that may change
+            // between releases.
+            val splitInvoked = invokeOpenInRightSplit(fileToOpen)
+            if (!splitInvoked) {
+                // Fallback: just open normally if the split action is
+                // unavailable in this IDE variant.
                 fileEditorManager.openFile(fileToOpen, !options.preserveFocus)
             }
         } else {
@@ -247,6 +255,30 @@ class DecryptedEditorHandler(private val project: Project) : Disposable {
         if (options.preserveFocus) {
             fileEditorManager.openFile(sourceFile, true)
         }
+    }
+
+    /**
+     * Open [fileToOpen] in a right split by invoking the bundled
+     * "OpenInRightSplit" action through the action system. Returns true
+     * if the action was dispatched, false if it is not registered in
+     * this IDE.
+     */
+    private fun invokeOpenInRightSplit(fileToOpen: VirtualFile): Boolean {
+        val action = ActionManager.getInstance().getAction("OpenInRightSplit") ?: return false
+        val dataContext = SimpleDataContext.builder()
+            .add(CommonDataKeys.PROJECT, project)
+            .add(CommonDataKeys.VIRTUAL_FILE, fileToOpen)
+            .build()
+        val event = AnActionEvent.createEvent(
+            action,
+            dataContext,
+            null,
+            "SopsieDecryptedView",
+            ActionUiKind.NONE,
+            null
+        )
+        ActionUtil.performAction(action, event)
+        return true
     }
 
     /**
