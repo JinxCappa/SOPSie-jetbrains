@@ -19,6 +19,10 @@ clean:
 verify:
     {{gradle}} verifyPlugin
 
+# Run tests
+test:
+    {{gradle}} test
+
 # Dev build via Docker
 docker-dev:
     docker build --target artifact --build-arg VERSION_SUFFIX=-dev --output type=local,dest=. .

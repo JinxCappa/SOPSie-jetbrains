@@ -96,6 +96,10 @@ data class SopsError(
 }
 
 /**
- * Exception wrapper for SopsError
+ * Exception wrapper for SopsError.
+ *
+ * Extends RuntimeException so callers (and mockito-based tests) do not have
+ * to declare or catch it explicitly. SOPS errors are surfaced through
+ * ErrorHandler / notification UI rather than checked exception flow.
  */
-class SopsException(val error: SopsError) : Exception(error.message)
+class SopsException(val error: SopsError) : RuntimeException(error.message)
