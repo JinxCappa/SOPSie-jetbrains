@@ -10,8 +10,10 @@ import com.sopsie.model.SopsError
 import com.sopsie.model.SopsErrorType
 import com.sopsie.model.SopsException
 import com.sopsie.services.SopsSettingsService
+import com.sopsie.util.SecureTempFiles
 import java.io.File
 import java.nio.charset.StandardCharsets
+import java.nio.file.Files
 
 private val LOG = logger<SopsRunner>()
 
@@ -94,20 +96,39 @@ class SopsRunner {
     }
 
     /**
-     * Encrypt content via stdin with --filename-override for rule matching.
-     * Pipes plaintext to SOPS stdin — no temp file needed.
-     * SOPS uses the override path for creation_rules matching and format detection.
+     * Encrypt in-memory content for a logical file path.
+     *
+     * Stages the payload in a secure per-invocation temp file and passes
+     * --filename-override so SOPS resolves creation_rules and infers the
+     * input/output format from the *original* path, not the temp path.
+     * This avoids the Windows-incompatible /dev/stdin trick that an
+     * earlier stdin-based version relied on, while still satisfying the
+     * rule-matching requirement that motivated dropping the previous
+     * temp-file approach.
      */
     fun encryptContent(content: String, filePath: String): String {
         LOG.debug("SopsRunner: Encrypting content for $filePath")
 
-        return runCommand(
-            settings.sopsPath,
-            listOf("--encrypt", "--filename-override", filePath),
-            getWorkingDirectory(filePath),
-            content,
-            settings.timeout
-        )
+        val tempPath = SecureTempFiles.create("sopsie-enc-", ".payload", content)
+        return try {
+            runCommand(
+                settings.sopsPath,
+                listOf(
+                    "--encrypt",
+                    "--filename-override", filePath,
+                    tempPath.toString()
+                ),
+                getWorkingDirectory(filePath),
+                null,
+                settings.timeout
+            )
+        } finally {
+            try {
+                Files.deleteIfExists(tempPath)
+            } catch (e: Exception) {
+                LOG.warn("Failed to clean up encrypt temp file $tempPath: ${e.message}")
+            }
+        }
     }
 
     /**
