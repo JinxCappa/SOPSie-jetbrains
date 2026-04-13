@@ -1,0 +1,7 @@
+# THIS IS A TEST-ONLY AGE KEY. DO NOT USE FOR REAL SECRETS.
+# Generated for the SOPSie JetBrains plugin integration test suite.
+# It is intentionally committed to the repository so anyone running the
+# tests has the matching private key without an extra setup step.
+# created: 2026-04-13T13:08:05-04:00
+# public key: age1zp98zk9zsylfa06gk80xnp0mpdcvrvhreude6q296klje6umyg7qvd7qm6
+AGE-SECRET-KEY-1FEYT6HKDZ2044THFXUGYZZ82T02PPC0WYJM35EYMCMMZ3WF5QP3SDHC32C
