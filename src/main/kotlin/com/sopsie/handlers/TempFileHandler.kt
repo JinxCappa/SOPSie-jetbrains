@@ -4,7 +4,6 @@ import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
@@ -14,11 +13,8 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileDocumentManagerListener
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
-import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.sopsie.execution.SopsRunner
@@ -121,6 +117,13 @@ class TempFileHandler(private val project: Project) : Disposable {
 
     /**
      * Handle document save - encrypt and write back to original.
+     *
+     * Runs synchronously via a modal progress dialog so the original
+     * file receives ciphertext before `beforeDocumentSaving` returns.
+     * An asynchronous task would let the IDE complete the save cycle
+     * while the original file was still stale, so the user's Ctrl+S
+     * would report success before the ciphertext actually reached
+     * disk.
      */
     private fun onDocumentSaved(document: Document) {
         val tempFile = FileDocumentManager.getInstance().getFile(document) ?: return
@@ -130,31 +133,43 @@ class TempFileHandler(private val project: Project) : Disposable {
         val content = document.text
         LOG.debug("Encrypting temp file $tempPath -> $originalPath")
 
-        ProgressManager.getInstance().run(object : Task.Backgroundable(project, "Encrypting and saving...", false) {
-            override fun run(indicator: ProgressIndicator) {
+        val encryptedRef = arrayOfNulls<String>(1)
+        val errorRef = arrayOfNulls<Throwable>(1)
+
+        val completed = ProgressManager.getInstance().runProcessWithProgressSynchronously(
+            {
                 try {
-                    // Encrypt content using SOPS
-                    val encrypted = SopsRunner.getInstance().encryptContent(content, originalPath)
-
-                    // Write encrypted content to original file
-                    ApplicationManager.getApplication().invokeAndWait {
-                        WriteCommandAction.runWriteCommandAction(project) {
-                            val originalFile = LocalFileSystem.getInstance().findFileByPath(originalPath)
-                            originalFile?.setBinaryContent(encrypted.toByteArray(Charsets.UTF_8))
-                        }
-                    }
-
-                    LOG.debug("Encrypted temp file $tempPath -> $originalPath")
-                    showInfo("Encrypted and saved to ${File(originalPath).name}")
-                } catch (ex: SopsException) {
-                    LOG.warn("Failed to encrypt: ${ex.error.message}", ex)
-                    showError("Failed to encrypt and save", ex.error.message)
-                } catch (ex: Exception) {
-                    LOG.warn("Failed to encrypt: ${ex.message}", ex)
-                    showError("Failed to encrypt and save", ex.message)
+                    encryptedRef[0] = SopsRunner.getInstance().encryptContent(content, originalPath)
+                } catch (ex: Throwable) {
+                    errorRef[0] = ex
                 }
+            },
+            "Encrypting and saving...",
+            false,
+            project
+        )
+
+        if (!completed) return
+
+        val err = errorRef[0]
+        if (err != null) {
+            val msg = when (err) {
+                is SopsException -> err.error.message
+                else -> err.message
             }
-        })
+            LOG.warn("Failed to encrypt: $msg", err)
+            showError("Failed to encrypt and save", msg)
+            return
+        }
+
+        val encrypted = encryptedRef[0] ?: return
+        WriteCommandAction.runWriteCommandAction(project) {
+            val originalFile = LocalFileSystem.getInstance().findFileByPath(originalPath)
+            originalFile?.setBinaryContent(encrypted.toByteArray(Charsets.UTF_8))
+        }
+
+        LOG.debug("Encrypted temp file $tempPath -> $originalPath")
+        showInfo("Encrypted and saved to ${File(originalPath).name}")
     }
 
     /**
