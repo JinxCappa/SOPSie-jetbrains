@@ -1,0 +1,23 @@
+src/main/kotlin/com/sopsie/util/SecureTempFiles.kt
+  1e9a3dd6251bb51d 3,6-9,12,21-25,32,34,36,40-41,56-57,59-72,75-101
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "9115f1da408a0875883fa4b828cdf3217a2dbe7b",
+  "prompts": {
+    "1e9a3dd6251bb51d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4925a7fc-c158-4e5a-a260-7341a9d0b7a4",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "JinxCappa",
+      "messages": [],
+      "total_additions": 61,
+      "total_deletions": 6,
+      "accepted_lines": 61,
+      "overriden_lines": 0
+    }
+  }
+}
