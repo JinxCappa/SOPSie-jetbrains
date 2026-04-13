@@ -1,0 +1,23 @@
+src/test/kotlin/com/sopsie/integration/SopsRoundTripTest.kt
+  d63088c59fab05bb 24,28,32-35,40-58,65-68,78,96,109-115,117-120,124
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "e09d48e9b0e0b9df83e715a0292438a25103a99a",
+  "prompts": {
+    "d63088c59fab05bb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "600f9893-572f-4010-aab9-ffd0a6190e19",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "JinxCappa",
+      "messages": [],
+      "total_additions": 43,
+      "total_deletions": 19,
+      "accepted_lines": 43,
+      "overriden_lines": 0
+    }
+  }
+}
