@@ -163,13 +163,22 @@ class TempFileHandler(private val project: Project) : Disposable {
         }
 
         val encrypted = encryptedRef[0] ?: return
+        var written = false
         WriteCommandAction.runWriteCommandAction(project) {
             val originalFile = LocalFileSystem.getInstance().findFileByPath(originalPath)
-            originalFile?.setBinaryContent(encrypted.toByteArray(Charsets.UTF_8))
+            if (originalFile != null) {
+                originalFile.setBinaryContent(encrypted.toByteArray(Charsets.UTF_8))
+                written = true
+            }
         }
 
-        LOG.debug("Encrypted temp file $tempPath -> $originalPath")
-        showInfo("Encrypted and saved to ${File(originalPath).name}")
+        if (written) {
+            LOG.debug("Encrypted temp file $tempPath -> $originalPath")
+            showInfo("Encrypted and saved to ${File(originalPath).name}")
+        } else {
+            LOG.warn("Original file not found, ciphertext not written: $originalPath")
+            showError("Failed to save encrypted file", "Original file not found: ${File(originalPath).name}")
+        }
     }
 
     /**

@@ -239,7 +239,7 @@ class DecryptedEditorHandler(private val project: Project) : Disposable {
      * Check if a file is a preview file (read-only temp).
      */
     fun isPreviewFile(file: VirtualFile): Boolean {
-        return file.name.contains(".sops-preview-")
+        return file.name.contains(".sops-preview.") || previewToOriginal.containsKey(file.path)
     }
 
     /**
