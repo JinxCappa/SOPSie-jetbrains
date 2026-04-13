@@ -62,9 +62,10 @@ class SopsRoundTripTest : BasePlatformTestCase() {
         try {
             createdDirs.forEach { dir ->
                 runCatching {
-                    Files.walk(dir)
-                        .sorted(Comparator.reverseOrder())
-                        .forEach { Files.deleteIfExists(it) }
+                    Files.walk(dir).use { stream ->
+                        stream.sorted(Comparator.reverseOrder())
+                            .forEach { Files.deleteIfExists(it) }
+                    }
                 }
             }
             createdDirs.clear()
