@@ -105,15 +105,18 @@ class SopsRoundTripTest : BasePlatformTestCase() {
         assertEquals(original, decrypted)
     }
 
-    // Bug surfaced by this suite: SopsRunner.encryptContent invokes
-    // `sops --encrypt --filename-override <path>` without specifying an
-    // input source. SOPS 3.12+ rejects this with "no file specified" and
-    // exits non-zero. The production code likely needs to append
-    // `/dev/stdin` (or `-`, version-dependent) so SOPS knows to read the
-    // payload from its stdin pipe. Until that fix lands the test is
-    // disabled to keep the suite green; the comment is the bug record.
-    fun `disabled test encryptContent matches the rules via filename-override`() {
-        // Intentionally renamed off the test* prefix so JUnit3 ignores it.
+    fun `test encryptContent matches the rules via filename-override`() {
+        if (skipIfNoSops()) return
+        // No file on disk for the source; encryptContent stages a temp
+        // file internally and passes --filename-override so SOPS picks
+        // up rules from .sops.yaml in the working directory of the
+        // logical file path.
+        val syntheticPath = workDir.resolve("via-stdin.yaml").toString()
+        val cipher = SopsRunner.getInstance()
+            .encryptContent("api_key: hunter2\n", syntheticPath)
+
+        assertTrue(cipher.contains("sops:"))
+        assertTrue(SopsDetector.getInstance().isContentEncrypted(cipher))
     }
 
     fun `test decrypt of a non-encrypted file fails with a SopsException`() {
