@@ -15,7 +15,7 @@
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             jdk21
-            gradle
+            gradle_9
             just
           ];
 
