@@ -1,6 +1,8 @@
 package com.sopsie.ui
 
 import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionUiKind
+import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.ex.ActionUtil
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext
@@ -109,6 +111,14 @@ class SopsEditorNotificationProvider : EditorNotificationProvider, DumbAware {
         // Dispatch through the action system so before/after listeners,
         // promoters, and update checks run. Calling actionPerformed
         // directly is override-only and bypasses that plumbing.
-        ActionUtil.invokeAction(action, dataContext, "EditorNotification", null, null)
+        val event = AnActionEvent.createEvent(
+            action,
+            dataContext,
+            null,
+            "EditorNotification",
+            ActionUiKind.NONE,
+            null
+        )
+        ActionUtil.performAction(action, event)
     }
 }
