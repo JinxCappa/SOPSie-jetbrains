@@ -180,7 +180,6 @@ class AutoBehaviorHandler(private val project: Project) {
         return when (saveBehavior) {
             SaveBehavior.AUTO_ENCRYPT -> {
                 autoEncryptDocument(document, file)
-                true
             }
             SaveBehavior.PROMPT -> {
                 promptBeforeSave(document, file)
@@ -214,7 +213,7 @@ class AutoBehaviorHandler(private val project: Project) {
      * asynchronously, the IDE would flush the current plaintext to disk before
      * the replacement completed, leaking secrets.
      */
-    private fun autoEncryptDocument(document: Document, file: VirtualFile) {
+    private fun autoEncryptDocument(document: Document, file: VirtualFile): Boolean {
         val content = document.text
         val encryptedRef = arrayOfNulls<String>(1)
         val errorRef = arrayOfNulls<Throwable>(1)
@@ -232,7 +231,7 @@ class AutoBehaviorHandler(private val project: Project) {
             project
         )
 
-        if (!completed) return
+        if (!completed) return false
 
         val err = errorRef[0]
         if (err != null) {
@@ -242,15 +241,16 @@ class AutoBehaviorHandler(private val project: Project) {
             }
             LOG.warn("Auto-encrypt failed for ${file.name}: $msg", err)
             showError("Auto-encrypt failed", msg)
-            return
+            return false
         }
 
-        val encrypted = encryptedRef[0] ?: return
+        val encrypted = encryptedRef[0] ?: return false
         WriteCommandAction.runWriteCommandAction(project) {
             document.setText(encrypted)
         }
         fileStateTracker.markEncrypted(file)
         LOG.debug("Auto-encrypted ${file.name}")
+        return true
     }
 
     /**
@@ -274,9 +274,7 @@ class AutoBehaviorHandler(private val project: Project) {
 
             when (choice) {
                 Messages.YES -> {
-                    // Encrypt & Save
-                    autoEncryptDocument(document, file)
-                    result = true
+                    result = autoEncryptDocument(document, file)
                 }
                 Messages.NO -> {
                     // Save Without Encryption
