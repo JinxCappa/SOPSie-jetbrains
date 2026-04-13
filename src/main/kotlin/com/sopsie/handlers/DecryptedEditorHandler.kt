@@ -20,6 +20,7 @@ import com.sopsie.execution.SopsRunner
 import com.sopsie.model.SopsException
 import com.sopsie.services.DecryptedViewMode
 import com.sopsie.services.SopsSettingsService
+import com.sopsie.util.SecureTempFiles
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
@@ -191,27 +192,12 @@ class DecryptedEditorHandler(private val project: Project) : Disposable {
     private fun createPreviewTempFile(originalFile: VirtualFile, decryptedContent: String): VirtualFile? {
         val ext = originalFile.extension ?: ""
         val nameWithoutExt = originalFile.nameWithoutExtension
-        val uniqueSuffix = System.currentTimeMillis()
-
-        // Create unique temp file name: {name}.sops-preview-{timestamp}.{ext}
-        val tempFileName = if (ext.isNotEmpty()) {
-            "$nameWithoutExt.sops-preview-$uniqueSuffix.$ext"
-        } else {
-            "$nameWithoutExt.sops-preview-$uniqueSuffix"
-        }
-
-        val tempDir = System.getProperty("java.io.tmpdir")
-        val tempPath = File(tempDir, tempFileName).absolutePath
+        val suffix = if (ext.isNotEmpty()) ".sops-preview.$ext" else ".sops-preview"
 
         try {
-            // Write decrypted content to temp file
-            val tempFile = File(tempPath)
-            tempFile.writeText(decryptedContent, Charsets.UTF_8)
-
-            // Make the file read-only
-            tempFile.setReadOnly()
-
-            // Refresh VFS to see the new file
+            val path = SecureTempFiles.create("$nameWithoutExt-preview-", suffix, decryptedContent)
+            path.toFile().setReadOnly()
+            val tempPath = path.toAbsolutePath().toString()
             return LocalFileSystem.getInstance().refreshAndFindFileByPath(tempPath)
         } catch (e: Exception) {
             LOG.warn("Failed to create preview temp file: ${e.message}", e)

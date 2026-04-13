@@ -23,6 +23,7 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.sopsie.execution.SopsRunner
 import com.sopsie.model.SopsException
+import com.sopsie.util.SecureTempFiles
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
@@ -67,25 +68,14 @@ class TempFileHandler(private val project: Project) : Disposable {
         val originalPath = originalFile.path
         val ext = originalFile.extension ?: ""
         val nameWithoutExt = originalFile.nameWithoutExtension
-
-        // Create unique temp file name: {name}.sops-edit.{ext}
-        val tempFileName = if (ext.isNotEmpty()) {
-            "$nameWithoutExt.sops-edit.$ext"
-        } else {
-            "$nameWithoutExt.sops-edit"
-        }
-
-        val tempDir = System.getProperty("java.io.tmpdir")
-        val tempPath = File(tempDir, tempFileName).absolutePath
+        val suffix = if (ext.isNotEmpty()) ".sops-edit.$ext" else ".sops-edit"
 
         try {
-            // Write decrypted content to temp file
-            File(tempPath).writeText(decryptedContent, Charsets.UTF_8)
+            val path = SecureTempFiles.create("$nameWithoutExt-", suffix, decryptedContent)
+            val tempPath = path.toAbsolutePath().toString()
 
-            // Refresh VFS to see the new file
             val tempVirtualFile = LocalFileSystem.getInstance().refreshAndFindFileByPath(tempPath)
             if (tempVirtualFile != null) {
-                // Track the mapping
                 tempToOriginal[tempPath] = originalPath
                 tempFiles[tempPath] = tempVirtualFile
                 LOG.debug("Created temp file: $tempPath -> $originalPath")
