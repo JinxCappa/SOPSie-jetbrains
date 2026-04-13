@@ -179,14 +179,28 @@ class SopsRunner {
 
         val handler = CapturingProcessHandler(commandLine)
 
-        // Write stdin if provided
-        if (stdin != null) {
-            handler.processInput.use { outputStream ->
-                outputStream.write(stdin.toByteArray(StandardCharsets.UTF_8))
+        // Write stdin on a dedicated thread so stdout/stderr readers can
+        // drain concurrently. Writing stdin synchronously before
+        // runProcess deadlocks once the payload exceeds the OS pipe
+        // buffer, because no reader is consuming stdout/stderr yet.
+        val stdinWriter: Thread? = if (stdin != null) {
+            val bytes = stdin.toByteArray(StandardCharsets.UTF_8)
+            Thread({
+                try {
+                    handler.processInput.use { it.write(bytes) }
+                } catch (ex: Exception) {
+                    LOG.debug("stdin write failed: ${ex.message}")
+                }
+            }, "sopsie-stdin-writer").apply {
+                isDaemon = true
+                start()
             }
+        } else {
+            null
         }
 
         val output: ProcessOutput = handler.runProcess(timeout)
+        stdinWriter?.join(1000)
 
         if (output.isTimeout) {
             throw SopsException(SopsError.timeout(timeout))
