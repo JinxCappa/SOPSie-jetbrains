@@ -1,0 +1,25 @@
+src/main/kotlin/com/sopsie/services/SopsConfigDebouncer.kt
+  59aab0ba58fe3693 1-52
+src/main/kotlin/com/sopsie/listeners/SopsConfigFileListener.kt
+  59aab0ba58fe3693 11,16-19,29-30,74,83,92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "33cbe874056d93786176b5618ae0a8832f4bcf56",
+  "prompts": {
+    "59aab0ba58fe3693": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "303fcdab-0bdc-404b-be9d-50b9cf68a596",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "JinxCappa",
+      "messages": [],
+      "total_additions": 62,
+      "total_deletions": 30,
+      "accepted_lines": 62,
+      "overriden_lines": 0
+    }
+  }
+}
