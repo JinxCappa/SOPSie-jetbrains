@@ -23,6 +23,23 @@ verify:
 test:
     {{gradle}} test
 
+# Create a release: bump version, update changelog, commit, tag, and push
+publish version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    VERSION="{{version}}"
+    VERSION="${VERSION#v}"
+    echo "Preparing release v${VERSION}..."
+    sed -i.bak 's/^version = ".*" + /version = "'"${VERSION}"'" + /' build.gradle.kts
+    rm -f build.gradle.kts.bak
+    git-cliff --config keepachangelog --tag "v${VERSION}" --output CHANGELOG.md --ignore-tags ".*-.*"
+    git add build.gradle.kts CHANGELOG.md
+    git commit -m "chore: prepare for v${VERSION}"
+    git tag -s "v${VERSION}" -m "v${VERSION}"
+    git push origin main
+    git push origin "v${VERSION}"
+    echo "Released v${VERSION} — workflow will build and publish."
+
 # Dev build via Docker
 docker-dev:
     docker build --target artifact --build-arg VERSION_SUFFIX=-dev --output type=local,dest=. .

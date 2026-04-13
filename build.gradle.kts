@@ -62,6 +62,9 @@ intellijPlatform {
             recommended()
         }
     }
+    publishing {
+        token = providers.environmentVariable("JETBRAINS_TOKEN")
+    }
 }
 
 kotlin {
