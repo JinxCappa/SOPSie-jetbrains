@@ -1,0 +1,33 @@
+src/main/kotlin/com/sopsie/ui/SopsEditorNotificationProvider.kt
+  01a93087705bfcee 11-13,54-56,60-62,66,79,92
+src/main/kotlin/com/sopsie/actions/DecryptAction.kt
+  01a93087705bfcee 8,34-35
+src/main/kotlin/com/sopsie/ui/SopsStatusBarWidget.kt
+  01a93087705bfcee 14,64-68
+src/main/kotlin/com/sopsie/handlers/DecryptedEditorHandler.kt
+  01a93087705bfcee 5-11,225-236
+src/main/kotlin/com/sopsie/actions/EncryptAction.kt
+  01a93087705bfcee 8,34-35
+src/main/kotlin/com/sopsie/execution/SopsOperations.kt
+  01a93087705bfcee 1-104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "ec9fbf3e30e7661a14b037c5e3f0925d0fcaff44",
+  "prompts": {
+    "01a93087705bfcee": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "47aa9273-8532-4f96-866b-318ffb86a926",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "JinxCappa",
+      "messages": [],
+      "total_additions": 552,
+      "total_deletions": 290,
+      "accepted_lines": 535,
+      "overriden_lines": 0
+    }
+  }
+}
