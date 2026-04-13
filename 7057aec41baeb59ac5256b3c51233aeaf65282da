@@ -1,0 +1,25 @@
+src/main/kotlin/com/sopsie/util/SecureTempFiles.kt
+  1e9a3dd6251bb51d 21,23-25,44
+src/main/kotlin/com/sopsie/handlers/TempFileHandler.kt
+  1e9a3dd6251bb51d 133-134,137-149,154,157
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "7057aec41baeb59ac5256b3c51233aeaf65282da",
+  "prompts": {
+    "1e9a3dd6251bb51d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4925a7fc-c158-4e5a-a260-7341a9d0b7a4",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "JinxCappa",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 22,
+      "overriden_lines": 0
+    }
+  }
+}
