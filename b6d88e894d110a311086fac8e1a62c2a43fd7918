@@ -1,0 +1,27 @@
+src/main/kotlin/com/sopsie/ui/SopsStatusBarWidget.kt
+  1e9a3dd6251bb51d 87
+src/main/kotlin/com/sopsie/ui/SopsEditorNotificationProvider.kt
+  1e9a3dd6251bb51d 112
+src/main/kotlin/com/sopsie/handlers/DecryptedEditorHandler.kt
+  1e9a3dd6251bb51d 5-10,225-232,247-269,274
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "b6d88e894d110a311086fac8e1a62c2a43fd7918",
+  "prompts": {
+    "1e9a3dd6251bb51d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4925a7fc-c158-4e5a-a260-7341a9d0b7a4",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "JinxCappa",
+      "messages": [],
+      "total_additions": 18,
+      "total_deletions": 4,
+      "accepted_lines": 40,
+      "overriden_lines": 0
+    }
+  }
+}
