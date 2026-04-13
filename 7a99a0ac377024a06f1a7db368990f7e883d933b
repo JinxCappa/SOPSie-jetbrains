@@ -1,0 +1,23 @@
+src/main/kotlin/com/sopsie/handlers/DecryptedEditorHandler.kt
+  1e9a3dd6251bb51d 242
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "7a99a0ac377024a06f1a7db368990f7e883d933b",
+  "prompts": {
+    "1e9a3dd6251bb51d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4925a7fc-c158-4e5a-a260-7341a9d0b7a4",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "JinxCappa",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
