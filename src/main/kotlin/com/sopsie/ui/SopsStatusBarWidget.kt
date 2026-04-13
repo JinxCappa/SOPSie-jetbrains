@@ -1,8 +1,5 @@
 package com.sopsie.ui
 
-import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.DataContext
-import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
@@ -14,6 +11,7 @@ import com.intellij.util.Alarm
 import com.intellij.util.Consumer
 import com.sopsie.config.SopsConfigManager
 import com.sopsie.detection.SopsDetector
+import com.sopsie.execution.SopsOperations
 import com.sopsie.model.FileEncryptionState
 import com.sopsie.services.FileStateTracker
 import com.sopsie.services.SopsSettingsService
@@ -21,10 +19,6 @@ import com.sopsie.util.SopsIcons
 import java.awt.event.MouseEvent
 import javax.swing.Icon
 
-/**
- * Status bar widget that displays SOPS encryption status for the current file.
- * Clicking the widget triggers encrypt/decrypt action based on current state.
- */
 class SopsStatusBarWidget(project: Project) : EditorBasedWidget(project), StatusBarWidget.IconPresentation {
 
     companion object {
@@ -65,33 +59,16 @@ class SopsStatusBarWidget(project: Project) : EditorBasedWidget(project), Status
 
     override fun getClickConsumer(): Consumer<MouseEvent>? {
         return Consumer { _ ->
-            val actionId = when (currentState) {
-                FileEncryptionState.ENCRYPTED -> "Sopsie.Decrypt"
-                FileEncryptionState.DECRYPTED, FileEncryptionState.PLAINTEXT -> "Sopsie.Encrypt"
-                FileEncryptionState.UNKNOWN -> return@Consumer
-            }
-
-            val action = ActionManager.getInstance().getAction(actionId) ?: return@Consumer
             val file = getCurrentFile() ?: return@Consumer
 
-            val dataContext: DataContext = SimpleDataContext.builder()
-                .add(com.intellij.openapi.actionSystem.CommonDataKeys.PROJECT, project)
-                .add(com.intellij.openapi.actionSystem.CommonDataKeys.VIRTUAL_FILE, file)
-                .build()
-
-            val event = com.intellij.openapi.actionSystem.AnActionEvent.createFromAnAction(
-                action,
-                null,
-                "StatusBar",
-                dataContext
-            )
-            action.actionPerformed(event)
+            when (currentState) {
+                FileEncryptionState.ENCRYPTED -> SopsOperations.decrypt(project, file)
+                FileEncryptionState.DECRYPTED, FileEncryptionState.PLAINTEXT -> SopsOperations.encrypt(project, file)
+                FileEncryptionState.UNKNOWN -> return@Consumer
+            }
         }
     }
 
-    /**
-     * Update the widget based on the current file
-     */
     fun update() {
         ApplicationManager.getApplication().invokeLater {
             val file = getCurrentFile()
@@ -107,7 +84,6 @@ class SopsStatusBarWidget(project: Project) : EditorBasedWidget(project), Status
             return
         }
 
-        // Check if file matches a SOPS rule
         val configManager = SopsConfigManager.getInstance(project)
         hasMatchingRule = configManager.hasMatchingRule(file)
 
@@ -116,7 +92,6 @@ class SopsStatusBarWidget(project: Project) : EditorBasedWidget(project), Status
             return
         }
 
-        // Determine encryption state
         val detector = SopsDetector.getInstance()
         val fileStateTracker = FileStateTracker.getInstance(project)
 
@@ -134,9 +109,6 @@ class SopsStatusBarWidget(project: Project) : EditorBasedWidget(project), Status
     override fun install(statusBar: StatusBar) {
         super.install(statusBar)
         update()
-        
-        // Schedule a delayed update for restored files
-        // This handles the case where configs aren't loaded yet during IDE startup
         updateAlarm.addRequest({ update() }, STARTUP_UPDATE_DELAY_MS)
     }
 
