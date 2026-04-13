@@ -8,14 +8,15 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.*
 import com.sopsie.config.SopsConfigManager
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
+import com.sopsie.services.SopsConfigDebouncer
 
 /**
  * Watches for .sops.yaml configuration file changes across all projects.
  * Uses BulkFileListener on VFS_CHANGES topic for efficient file system monitoring.
+ *
+ * The debounce scheduler lives in [SopsConfigDebouncer] (an application
+ * service) so it is disposed by the platform on plugin unload as well as
+ * on IDE shutdown.
  */
 class SopsConfigFileListener : BulkFileListener {
 
@@ -25,13 +26,8 @@ class SopsConfigFileListener : BulkFileListener {
         private const val DEBOUNCE_MS = 500L
     }
 
-    // Debounce scheduler for rapid file changes
-    private val scheduler = Executors.newSingleThreadScheduledExecutor { r ->
-        Thread(r, "SOPSie-ConfigDebounce").apply { isDaemon = true }
-    }
-
-    // Map of pending debounced events: key -> scheduled future
-    private val pendingEvents = ConcurrentHashMap<String, ScheduledFuture<*>>()
+    private val debouncer: SopsConfigDebouncer
+        get() = SopsConfigDebouncer.getInstance()
 
     override fun after(events: List<VFileEvent>) {
         for (event in events) {
@@ -75,7 +71,7 @@ class SopsConfigFileListener : BulkFileListener {
     }
 
     private fun handleContentChange(file: VirtualFile) {
-        debounce("change:${file.path}") {
+        debouncer.debounce("change:${file.path}", DEBOUNCE_MS) {
             LOG.debug("SOPSie: Config file changed: ${file.path}")
             forEachRelevantProject(file) { project ->
                 SopsConfigManager.getInstance(project).reloadConfig(file)
@@ -84,7 +80,7 @@ class SopsConfigFileListener : BulkFileListener {
     }
 
     private fun handleCreate(file: VirtualFile) {
-        debounce("create:${file.path}") {
+        debouncer.debounce("create:${file.path}", DEBOUNCE_MS) {
             LOG.debug("SOPSie: Config file created: ${file.path}")
             forEachRelevantProject(file) { project ->
                 SopsConfigManager.getInstance(project).loadConfig(file)
@@ -93,28 +89,12 @@ class SopsConfigFileListener : BulkFileListener {
     }
 
     private fun handleDelete(path: String) {
-        debounce("delete:$path") {
+        debouncer.debounce("delete:$path", DEBOUNCE_MS) {
             LOG.debug("SOPSie: Config file deleted: $path")
             forEachProject { project ->
                 SopsConfigManager.getInstance(project).removeConfig(path)
             }
         }
-    }
-
-    /**
-     * Debounce rapid changes to the same file
-     */
-    private fun debounce(key: String, action: () -> Unit) {
-        // Cancel any pending action for this key
-        pendingEvents[key]?.cancel(false)
-
-        // Schedule new action
-        val future = scheduler.schedule({
-            pendingEvents.remove(key)
-            action()
-        }, DEBOUNCE_MS, TimeUnit.MILLISECONDS)
-
-        pendingEvents[key] = future
     }
 
     /**
