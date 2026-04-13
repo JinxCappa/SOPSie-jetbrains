@@ -5,6 +5,11 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.openapi.vfs.newvfs.BulkFileListener
+import com.intellij.openapi.vfs.newvfs.events.VFileEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileMoveEvent
+import com.intellij.openapi.vfs.newvfs.events.VFilePropertyChangeEvent
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -16,6 +21,40 @@ import java.util.concurrent.ConcurrentHashMap
 class FileStateTracker(private val project: Project) : Disposable {
 
     private val decryptedFiles = ConcurrentHashMap.newKeySet<String>()
+
+    init {
+        // Keep path-keyed state in sync with VFS renames and moves.
+        // Without this, saving a decrypted file after renaming it would
+        // silently skip re-encryption and flush plaintext to disk under
+        // the new name.
+        val connection = project.messageBus.connect(this)
+        connection.subscribe(VirtualFileManager.VFS_CHANGES, object : BulkFileListener {
+            override fun after(events: List<VFileEvent>) {
+                for (event in events) {
+                    when (event) {
+                        is VFileMoveEvent -> {
+                            val oldPath = event.oldParent.path + "/" + event.file.name
+                            rekey(oldPath, event.file.path)
+                        }
+                        is VFilePropertyChangeEvent -> {
+                            if (event.propertyName == VirtualFile.PROP_NAME) {
+                                val parent = event.file.parent?.path ?: continue
+                                val oldPath = "$parent/${event.oldValue}"
+                                val newPath = "$parent/${event.newValue}"
+                                rekey(oldPath, newPath)
+                            }
+                        }
+                    }
+                }
+            }
+        })
+    }
+
+    private fun rekey(oldPath: String, newPath: String) {
+        if (decryptedFiles.remove(oldPath)) {
+            decryptedFiles.add(newPath)
+        }
+    }
 
     /**
      * Mark a file as decrypted
