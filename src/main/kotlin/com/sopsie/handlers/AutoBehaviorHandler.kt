@@ -208,34 +208,49 @@ class AutoBehaviorHandler(private val project: Project) {
 
     /**
      * Auto-encrypt document content before save.
+     *
+     * Runs synchronously via a modal progress dialog so the document is updated
+     * with ciphertext BEFORE `beforeDocumentSaving` returns. If encryption ran
+     * asynchronously, the IDE would flush the current plaintext to disk before
+     * the replacement completed, leaking secrets.
      */
     private fun autoEncryptDocument(document: Document, file: VirtualFile) {
         val content = document.text
+        val encryptedRef = arrayOfNulls<String>(1)
+        val errorRef = arrayOfNulls<Throwable>(1)
 
-        ProgressManager.getInstance().run(object : Task.Backgroundable(project, "Encrypting before save...", false) {
-            override fun run(indicator: ProgressIndicator) {
+        val completed = ProgressManager.getInstance().runProcessWithProgressSynchronously(
+            {
                 try {
-                    val encrypted = sopsRunner.encryptContent(content, file.path)
-
-                    // Update document with encrypted content
-                    ApplicationManager.getApplication().invokeLater({
-                        WriteCommandAction.runWriteCommandAction(project) {
-                            document.setText(encrypted)
-                        }
-                        // Mark as encrypted
-                        fileStateTracker.markEncrypted(file)
-                        LOG.debug("Auto-encrypted ${file.name}")
-                    }, ModalityState.defaultModalityState())
-
-                } catch (ex: SopsException) {
-                    LOG.warn("Auto-encrypt failed for ${file.name}: ${ex.error.message}", ex)
-                    showError("Auto-encrypt failed", ex.error.message)
-                } catch (ex: Exception) {
-                    LOG.warn("Auto-encrypt failed for ${file.name}: ${ex.message}", ex)
-                    showError("Auto-encrypt failed", ex.message)
+                    encryptedRef[0] = sopsRunner.encryptContent(content, file.path)
+                } catch (ex: Throwable) {
+                    errorRef[0] = ex
                 }
+            },
+            "Encrypting before save...",
+            false,
+            project
+        )
+
+        if (!completed) return
+
+        val err = errorRef[0]
+        if (err != null) {
+            val msg = when (err) {
+                is SopsException -> err.error.message
+                else -> err.message
             }
-        })
+            LOG.warn("Auto-encrypt failed for ${file.name}: $msg", err)
+            showError("Auto-encrypt failed", msg)
+            return
+        }
+
+        val encrypted = encryptedRef[0] ?: return
+        WriteCommandAction.runWriteCommandAction(project) {
+            document.setText(encrypted)
+        }
+        fileStateTracker.markEncrypted(file)
+        LOG.debug("Auto-encrypted ${file.name}")
     }
 
     /**
