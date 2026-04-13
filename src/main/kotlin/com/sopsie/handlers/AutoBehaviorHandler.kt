@@ -193,6 +193,25 @@ class AutoBehaviorHandler(private val project: Project) {
     }
 
     /**
+     * Revert a document to the bytes currently on disk. Used when the
+     * user cancels the save prompt: FileDocumentManagerListener cannot
+     * cancel a save, so replacing the buffer with on-disk content makes
+     * the subsequent save a no-op instead of leaking plaintext.
+     */
+    fun revertDocumentToDisk(document: Document, file: VirtualFile) {
+        val diskText = try {
+            String(file.contentsToByteArray(), Charsets.UTF_8)
+        } catch (ex: Exception) {
+            LOG.warn("Could not read on-disk content for ${file.name}: ${ex.message}", ex)
+            // Best fallback: empty the buffer so plaintext does not reach disk.
+            ""
+        }
+        WriteCommandAction.runWriteCommandAction(project) {
+            document.setText(diskText)
+        }
+    }
+
+    /**
      * Mark a file as decrypted (called after successful decrypt operations).
      */
     fun markDecrypted(file: VirtualFile) {
