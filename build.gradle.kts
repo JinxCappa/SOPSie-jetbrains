@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.sopsie"
-version = "0.1.0" + (findProperty("version.suffix")?.toString() ?: "")
+version = "0.1.1" + (findProperty("version.suffix")?.toString() ?: "")
 
 repositories {
     mavenCentral()
