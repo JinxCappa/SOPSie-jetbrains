@@ -68,4 +68,41 @@ class SopsRunnerTest {
         val e = runner.parseError("could not decrypt: failed to decrypt data", 1)
         assertEquals(SopsErrorType.KEY_ACCESS_DENIED, e.type)
     }
+
+    // resolveFileType — basename-based store selection.
+    // Covers the `.env.<suffix>` family that SOPS's own extension heuristic
+    // misclassifies as JSON.
+
+    @Test fun `resolveFileType literal dotenv`() {
+        assertEquals("dotenv", SopsRunner.resolveFileType(".env"))
+        assertEquals("dotenv", SopsRunner.resolveFileType("/tmp/.env"))
+    }
+
+    @Test fun `resolveFileType suffixed dotenv`() {
+        assertEquals("dotenv", SopsRunner.resolveFileType(".env.local"))
+        assertEquals("dotenv", SopsRunner.resolveFileType(".env.production"))
+    }
+
+    @Test fun `resolveFileType prefixed dotenv`() {
+        assertEquals("dotenv", SopsRunner.resolveFileType("foo.env"))
+        assertEquals("dotenv", SopsRunner.resolveFileType("/path/to/secrets.env"))
+    }
+
+    @Test fun `resolveFileType is case-insensitive`() {
+        assertEquals("dotenv", SopsRunner.resolveFileType("FOO.ENV"))
+        assertEquals("json", SopsRunner.resolveFileType("Config.JSON"))
+    }
+
+    @Test fun `resolveFileType structured formats`() {
+        assertEquals("json", SopsRunner.resolveFileType("config.json"))
+        assertEquals("yaml", SopsRunner.resolveFileType("config.yaml"))
+        assertEquals("yaml", SopsRunner.resolveFileType("config.yml"))
+        assertEquals("ini", SopsRunner.resolveFileType("config.ini"))
+    }
+
+    @Test fun `resolveFileType falls back to binary`() {
+        assertEquals("binary", SopsRunner.resolveFileType("Dockerfile"))
+        assertEquals("binary", SopsRunner.resolveFileType("secret.bin"))
+        assertEquals("binary", SopsRunner.resolveFileType(".envrc"))
+    }
 }
