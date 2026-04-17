@@ -33,64 +33,43 @@ class SopsRunner {
     }
 
     /**
-     * Determine the input type based on file extension
-     */
-    private fun getInputType(extension: String): String {
-        return when (extension.lowercase()) {
-            "json" -> "json"
-            "env" -> "dotenv"
-            "ini" -> "ini"
-            "yaml", "yml" -> "yaml"
-            else -> "binary"
-        }
-    }
-
-    /**
      * Decrypt a file and return the decrypted content.
-     * Automatically detects file type from extension.
+     * Format is resolved from the basename so suffixed dotenv names
+     * (`.env.local`, `.env.production`) are handled correctly; SOPS's own
+     * extension heuristic misses them and falls back to JSON.
      */
     fun decrypt(filePath: String): String {
-        val ext = File(filePath).extension
-        val fileType = getInputType(ext)
+        val fileType = resolveFileType(filePath)
         LOG.debug("SopsRunner: Decrypting $filePath (type=$fileType)")
 
-        return if (fileType == "binary") {
-            runSops(
-                listOf(
-                    "--decrypt",
-                    "--input-type", "binary",
-                    "--output-type", "binary",
-                    filePath
-                ),
+        return runSops(
+            listOf(
+                "--decrypt",
+                "--input-type", fileType,
+                "--output-type", fileType,
                 filePath
-            )
-        } else {
-            runSops(listOf("--decrypt", filePath), filePath)
-        }
+            ),
+            filePath
+        )
     }
 
     /**
      * Encrypt a file and return the encrypted content.
-     * Automatically detects file type from extension.
+     * Format is resolved from the basename (see [decrypt]).
      */
     fun encrypt(filePath: String): String {
-        val ext = File(filePath).extension
-        val fileType = getInputType(ext)
+        val fileType = resolveFileType(filePath)
         LOG.debug("SopsRunner: Encrypting $filePath (type=$fileType)")
 
-        return if (fileType == "binary") {
-            runSops(
-                listOf(
-                    "--encrypt",
-                    "--input-type", "binary",
-                    "--output-type", "binary",
-                    filePath
-                ),
+        return runSops(
+            listOf(
+                "--encrypt",
+                "--input-type", fileType,
+                "--output-type", fileType,
                 filePath
-            )
-        } else {
-            runSops(listOf("--encrypt", filePath), filePath)
-        }
+            ),
+            filePath
+        )
     }
 
     /**
@@ -101,9 +80,15 @@ class SopsRunner {
     fun encryptContent(content: String, filePath: String): String {
         LOG.debug("SopsRunner: Encrypting content for $filePath")
 
+        val fileType = resolveFileType(filePath)
         return runCommand(
             settings.sopsPath,
-            listOf("--encrypt", "--filename-override", filePath),
+            listOf(
+                "--encrypt",
+                "--input-type", fileType,
+                "--output-type", fileType,
+                "--filename-override", filePath
+            ),
             getWorkingDirectory(filePath),
             content,
             settings.timeout
@@ -245,5 +230,28 @@ class SopsRunner {
     companion object {
         @JvmStatic
         fun getInstance(): SopsRunner = service()
+
+        /**
+         * Resolve the SOPS store type for a file path based on its basename.
+         *
+         * Handles the `.env.<suffix>` family (`.env.local`, `.env.production`)
+         * that SOPS's own extension heuristic misses — it falls back to JSON
+         * there, which chokes on `#` comments and `KEY=value` lines.
+         */
+        @JvmStatic
+        fun resolveFileType(filePath: String): String {
+            val base = File(filePath).name.lowercase()
+
+            if (base == ".env" || base.startsWith(".env.") || base.endsWith(".env")) {
+                return "dotenv"
+            }
+
+            return when (base.substringAfterLast('.', "")) {
+                "json" -> "json"
+                "ini" -> "ini"
+                "yaml", "yml" -> "yaml"
+                else -> "binary"
+            }
+        }
     }
 }
